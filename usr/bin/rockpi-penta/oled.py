@@ -78,6 +78,21 @@ def put_disk_info():
 
     return page
 
+def put_interface_info(pages_len):
+    pages = {}
+    page_index = pages_len
+    interfaces = misc.get_interface_list()
+
+    for x in interfaces:
+        pages[page_index] = [
+            {'xy': (0, -2), 'text': 'Network (' + x + '):', 'fill': 255, 'font': font['11']},
+            {'xy': (0, 10), 'text': misc.get_interface_rx_info(x), 'fill': 255, 'font': font['11']},
+            {'xy': (0, 21), 'text': misc.get_interface_tx_info(x), 'fill': 255, 'font': font['11']}
+        ]
+        page_index = page_index + 1
+
+    return pages
+
 
 def gen_pages():
     pages = {
@@ -92,6 +107,8 @@ def gen_pages():
         ],
         2: put_disk_info()
     }
+
+    pages.update(put_interface_info(len(pages)))
 
     return pages
 

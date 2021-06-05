@@ -12,7 +12,8 @@ from collections import defaultdict, OrderedDict
 
 cmds = {
     'blk': "lsblk | awk '{print $1}'",
-    'up': "echo Uptime: `uptime | sed 's/.*up \\([^,]*\\), .*/\\1/'`",
+    #'up': "echo Uptime: `uptime | sed 's/.*up \\([^,]*\\), .*/\\1/'`",
+    'up': "echo Up: $(uptime -p | sed 's/ years,/y/g;s/ year,/y/g;s/ months,/m/g;s/ month,/m/g;s/ weeks,/w/g;s/ week,/w/g;s/ days,/d/g;s/ day,/d/g;s/ hours,/h/g;s/ hour,/h/g;s/ minutes/m/g;s/ minute/m/g' | cut -d ' ' -f2-)",
     'temp': "cat /sys/class/thermal/thermal_zone0/temp",
     'ip': "hostname -I | awk '{printf \"IP %s\", $1}'",
     'cpu': "uptime | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'",
@@ -105,6 +106,8 @@ def read_conf():
         conf['slider']['time'] = cfg.getfloat('slider', 'time')
         conf['oled']['rotate'] = cfg.getboolean('oled', 'rotate')
         conf['oled']['f-temp'] = cfg.getboolean('oled', 'f-temp')
+        # network
+        conf['network']['interfaces'] = cfg.get('network','interfaces').split('|')
     except Exception:
         # fan
         conf['fan']['lv0'] = 35
@@ -127,6 +130,8 @@ def read_conf():
         conf['slider']['time'] = 10  # second
         conf['oled']['rotate'] = False
         conf['oled']['f-temp'] = False
+        # network
+        conf['network']['interfaces'] = []
 
     return conf
 
@@ -156,6 +161,37 @@ def watch_key(q=None):
     while True:
         q.put(read_key(pattern, size))
 
+def get_interface_list():
+    if len(conf['network']['interfaces']) == 1 and conf['network']['interfaces'][0] == '':
+        return []
+
+    if len(conf['network']['interfaces']) == 1 and conf['network']['interfaces'][0] == 'auto':
+        interfaces = []
+        cmd = "ip -o link show | awk '{print $2,$9}'"
+        list = check_output(cmd).split('\n')
+        for x in list:
+            name_status = x.split(': ')
+            if "UP" in name_status[1]:
+                interfaces.append(name_status[0])
+
+        interfaces.sort()
+
+    else:
+        interfaces = conf['network']['interfaces']
+
+    return interfaces
+
+
+def get_interface_rx_info(interface):
+    cmd = "R1=$(cat /sys/class/net/" + interface + "/statistics/rx_bytes); sleep 1; R2=$(cat /sys/class/net/" + interface + "/statistics/rx_bytes); echo | awk -v r1=$R1 -v r2=$R2 '{printf \"rx: %.5f MB/s\", (r2 - r1) / 1024 / 1024}';"
+    output = check_output(cmd)
+    return output
+
+
+def get_interface_tx_info(interface):
+    cmd = "T1=$(cat /sys/class/net/" + interface + "/statistics/tx_bytes); sleep 1; T2=$(cat /sys/class/net/" + interface + "/statistics/tx_bytes); echo | awk -v t1=$T1 -v t2=$T2 '{printf \"tx: %.5f MB/s\", (t2 - t1) / 1024 / 1024}';"
+    output = check_output(cmd)
+    return output
 
 def get_disk_info(cache={}):
     if not cache.get('time') or time.time() - cache['time'] > 30:
