@@ -20,7 +20,16 @@ cmds = {
     'disk': "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
 }
 
-lv2dc = OrderedDict({'lv3': 0, 'lv2': 0.25, 'lv1': 0.5, 'lv0': 0.75})
+lv2dc = OrderedDict({
+    'lv7': 0, 
+    'lv6': 0.12, 
+    'lv5': 0.25, 
+    'lv4': 0.37, 
+    'lv3': 0.5, 
+    'lv2': 0.62, 
+    'lv1': 0.75, 
+    'lv0': 1
+    })
 
 
 def set_mode(pin, mode=1):
@@ -64,10 +73,26 @@ def read_conf():
         cfg = ConfigParser()
         cfg.read('/etc/rockpi-penta.conf')
         # fan
-        conf['fan']['lv0'] = cfg.getfloat('fan', 'lv0')
-        conf['fan']['lv1'] = cfg.getfloat('fan', 'lv1')
-        conf['fan']['lv2'] = cfg.getfloat('fan', 'lv2')
-        conf['fan']['lv3'] = cfg.getfloat('fan', 'lv3')
+        # Reverse compativility for old configs
+        # If none of the new value are founf in the cfg
+        if bool(set(['lv4', 'lv5', 'lv6', 'lv7']) & set(cfg['fan'].keys())) == False:
+            conf['fan']['lv0'] = cfg.getfloat('fan','lv0')
+            conf['fan']['lv1'] = cfg.getfloat('fan','lv0')
+            conf['fan']['lv2'] = cfg.getfloat('fan','lv1')
+            conf['fan']['lv3'] = cfg.getfloat('fan','lv1')
+            conf['fan']['lv4'] = cfg.getfloat('fan','lv2')
+            conf['fan']['lv5'] = cfg.getfloat('fan','lv2')
+            conf['fan']['lv6'] = cfg.getfloat('fan','lv3')
+            conf['fan']['lv7'] = cfg.getfloat('fan','lv3')
+        else:
+            conf['fan']['lv0'] = cfg.getfloat('fan','lv0')
+            conf['fan']['lv1'] = cfg.getfloat('fan','lv1')
+            conf['fan']['lv2'] = cfg.getfloat('fan','lv2')
+            conf['fan']['lv3'] = cfg.getfloat('fan','lv3')
+            conf['fan']['lv4'] = cfg.getfloat('fan','lv4')
+            conf['fan']['lv5'] = cfg.getfloat('fan','lv5')
+            conf['fan']['lv6'] = cfg.getfloat('fan','lv6')            
+            conf['fan']['lv7'] = cfg.getfloat('fan','lv7')
         # key
         conf['key']['click'] = cfg.get('key', 'click')
         conf['key']['twice'] = cfg.get('key', 'twice')
@@ -83,9 +108,13 @@ def read_conf():
     except Exception:
         # fan
         conf['fan']['lv0'] = 35
-        conf['fan']['lv1'] = 40
-        conf['fan']['lv2'] = 45
-        conf['fan']['lv3'] = 50
+        conf['fan']['lv1'] = 37
+        conf['fan']['lv2'] = 40
+        conf['fan']['lv3'] = 42
+        conf['fan']['lv4'] = 44
+        conf['fan']['lv5'] = 46
+        conf['fan']['lv6'] = 48
+        conf['fan']['lv7'] = 50
         # key
         conf['key']['click'] = 'slider'
         conf['key']['twice'] = 'switch'

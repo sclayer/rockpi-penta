@@ -1,5 +1,5 @@
 Package: rockpi-penta
-Version: 0.10
+Version: 0.11
 Architecture: all
 Maintainer: Radxa <dev@radxa.com>
 Depends: python3
